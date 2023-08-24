@@ -1,7 +1,7 @@
 import gradio as gr
 
 from mldanbooru.interface import Infer
-from webui import wrap_gradio_gpu_call
+from modules.call_queue import wrap_gradio_gpu_call
 from modules import script_callbacks
 from modules.ui import setup_progressbar
 
