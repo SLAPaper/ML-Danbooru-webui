@@ -6,7 +6,7 @@ import gradio as gr
 
 import torch
 from PIL import Image
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download as _hf_hub_download
 from torchvision import transforms
 
 from mldanbooru.utils.factory import create_model
@@ -15,6 +15,19 @@ from modules import shared
 import gc
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def hf_hub_download(*args, **kwargs):
+    try:
+        from .utils.proxy_config import _PROXIES
+        proxy = _PROXIES
+    except ImportError:
+        proxy = {}
+
+    if proxy:
+        kwargs['proxies'] = proxy
+        return _hf_hub_download(*args, **kwargs)
+    
+    return _hf_hub_download(*args, **kwargs)
 
 def crop_fix(img: Image):
     w, h = img.size
