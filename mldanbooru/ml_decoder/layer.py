@@ -9,6 +9,13 @@ try:
 except:
     print('xformers not find')
 
+
+class BatchFirstMimic:
+    """mimic batch_first behavior that nn.module.transformer needs"""
+    def __init__(self, batch_first: bool) -> None:
+        self.batch_first = batch_first
+
+
 class TransformerDecoderLayerOptimal(nn.Module):
     def __init__(self, d_model, nhead=8, dim_feedforward=2048, dropout=0.1, activation="relu",
                  layer_norm_eps=1e-5) -> None:
@@ -20,6 +27,7 @@ class TransformerDecoderLayerOptimal(nn.Module):
         self.dropout3 = nn.Dropout(dropout)
 
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = BatchFirstMimic(False)
 
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
@@ -38,7 +46,7 @@ class TransformerDecoderLayerOptimal(nn.Module):
     def forward(self, tgt: Tensor, memory: Tensor, tgt_mask: Optional[Tensor] = None,
                 memory_mask: Optional[Tensor] = None,
                 tgt_key_padding_mask: Optional[Tensor] = None,
-                memory_key_padding_mask: Optional[Tensor] = None) -> Tensor:
+                memory_key_padding_mask: Optional[Tensor] = None, *args, **kwargs) -> Tensor:
         """
             tgt: [N_query, B, E]
             memory: [N_feat, B, E]
@@ -72,6 +80,7 @@ class TransformerDecoderLayerOptimal_XFromers(nn.Module):
 
         attention = build_attention(my_config)
         self.multihead_attn = MultiHeadDispatch(d_model, nhead, attention, residual_dropout=dropout)
+        self.self_attn = BatchFirstMimic(True)
 
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
@@ -90,7 +99,7 @@ class TransformerDecoderLayerOptimal_XFromers(nn.Module):
     def forward(self, tgt: Tensor, memory: Tensor, tgt_mask: Optional[Tensor] = None,
                 memory_mask: Optional[Tensor] = None,
                 tgt_key_padding_mask: Optional[Tensor] = None,
-                memory_key_padding_mask: Optional[Tensor] = None) -> Tensor:
+                memory_key_padding_mask: Optional[Tensor] = None, *args, **kwargs) -> Tensor:
         """
             tgt: [B, N_query, E]
             memory: [B, N_feat, E]
